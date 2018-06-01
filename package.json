@@ -1,0 +1,16 @@
+{
+  "name": "Sprint-Challenge-Node-Express",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/danteocualesjr/Sprint-Challenge-Node-Express.git",
+  "author": "Dante O. Cuales, Jr. <danteocualesjr@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "and": "^0.0.3",
+    "knex": "^0.14.6",
+    "sqlite3": "^4.0.0"
+  },
+  "script": {
+    "start": "nodemon server.js"
+  }
+}
