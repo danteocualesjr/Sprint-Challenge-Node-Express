@@ -2,6 +2,8 @@
 
 ## What is Node.js?
 
+Node is a backend development platform.
+
 ## What is Express?
 
 ## Mention two parts of Express that you learned about this week.
