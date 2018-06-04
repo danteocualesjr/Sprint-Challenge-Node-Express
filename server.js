@@ -1,12 +1,12 @@
 const express = require('express');
-const cors = require('cors');
+// const cors = require('cors');
+const port = 5333;
 const projects = require('./data/helpers/projectModel.js');
 const actions = require('./data/helpers/actionModel.js');
-const port = 5333;
 
 const server = express();
 server.use(express.json());
-server.use(cors({}));
+// server.use(cors({}));
 
 const errorHelper = (status, message, res) => {
     res.status(status).json({ error: message });
@@ -24,154 +24,158 @@ const nameCheckMiddleware = (req, res, next) => {
     }
 };
 
-// ===== PROJECTS ENDPOINTS =====
+// =============== PROJECTS ENDPOINTS ===============
 
 server.post('/api/projects', (req, res) => {
-    const { name, description } = req.body;
+    const { name, description, completed } = req.body;
+    if (!name || !description) {
+        res.status(404).json({ error: 'We need name and description.' });
+        return;
+    }
+    const newProject = { name, description, completed };
     projects
-        .insert({ name, description })
+        .insert(newProject)
         .then(response => {
-            res.json(response);
+            console.log(response);
+            res.status(201).json(response);
         })
         .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+            res.status(500).json({ error: 'Cannot create projects to DB.' });
+        }); 
 });
 
 server.get('/api/projects', (req,res) => {
     projects
         .get()
-        .then(foundProjects => {
-            res.json(foundProjects);
-        })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .then(projects => res.json(projects))
+        .catch(err => res.status(500).json({ error: 'Database down!' }));
 });
 
 server.get('/api/projects/:id', (req, res) => {
     const { id } = req.params;
     projects
         .get(id)
-        .then(userProjects => {
-            if(userProjects === 0) {
-                return errorHelper(404, 'No projects by that user', res);
-            }
-            res.json(userProjects);
+        .then(project => res.json(project))
+        .catch(err => {
+            res.status(500).json({ error: 'Database down!' });
+        });
+});
+
+server.get('/api/projects/:id/actions', (req, res) => {
+    const { id } = req.params;
+    projects
+        .getProjectActions(id)
+        .then(actions => {
+            res.json(actions)
         })
         .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
+            res.status(500).json({ error: 'Database down!' });
         });
 });
 
 server.put('/api/projects/:id', (req, res) => {
+    const { name, description, completed } = req.body;
+    const updatedProject = { name, description, completed };
+    if (!name || !description) {
+        res.status(404).json({ error: 'We need name and description.' });
+        return;
+    }
     const { id } = req.params;
-    const { name } = req.body;
     projects
-        .update(id, { name })
+        .update(id, updatedProject)
         .then(response => {
-            if (response === 0) {
-                return errorHelper(404, 'No project by that ID.');
-            } else {
-                db.find(id).then(projects => {
-                    res.json(projects);
-                });
-            }
+            res.json(response);
         })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .catch(err =>
+            res.status(400).json({ error: 'Cannot update that item from DB.' })
+        );
 });
 
 server.delete('/api/projects/:id', (req, res) => {
     const { id } = req.params;
     projects
         .remove(id)
-        .then(projectRemoved => {
-            if (projectRemoved === 0) {
-                return errorHelper(404, 'No project by that ID.');
-            } else {
-                res.json({ success: 'Project removed'});
+        .then(response => {
+            if (response == 0) {
+                res.status(404).json({ error: 'That ID does not live in our DB.' });
+                return;
             }
+            res.json({ success: 'Item removed from DB.' });
         })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .catch(err => 
+            res.status(400).json({ error: 'Cannot remove that item from DB.' })
+        );
 });
 
-// ===== ACTIONS ENDPOINTS =====
+// =============== ACTIONS ENDPOINTS ===============
 
 server.post('/api/actions', (req, res) => {
-    const { project_id, description, notes } = req.body;
+    const { project_id, description, completed, notes } = req.body;
+    const newAction = { project_id, description, completed, notes }
+    if (!project_id || !description) {
+        res.status(404).json({ error: 'We need project ID and description.' });
+        return;
+    }
     actions
-        .insert({ project_id, description, notes })
+        .insert(newAction)
         .then(response => {
-            res.json(response);
+            res.status(201).json(response);
         })
         .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
+            res.status(500).json({ error: 'Database down!' });            
         });
 });
 
 server.get('/api/actions', (req,res) => {
     actions
         .get()
-        .then(foundActions => {
-            res.json(foundActions);
-        })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .then(actions => res.json(actions))
+        .catch(err => res.status(500).json({ error: 'Database down!' }));
 });
 
 server.get('/api/actions/:id', (req, res) => {
     const { id } = req.params;
     actions
         .get(id)
-        .then(userActions => {
-            if(userActions === 0) {
-                return errorHelper(404, 'No projects by that user', res);
-            }
-            res.json(userActions);
-        })
+        .then(action => res.json(action))
         .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
+            console.log(err);
+            res.status(500).json({ error: 'Database down!' });
         });
 });
 
 server.put('/api/actions/:id', (req, res) => {
-    const { id } = req.params;
     const { project_id, description, notes } = req.body;
+    const updatedAction = { project_id, description, notes };
+    if (!project_id || !description) {
+        res.status(404).json({ error: 'We need project ID and description.' });
+        return;
+    }
+    const { id } = req.params;
     actions
-        .update(id, { project_id, description, notes })
+        .update(id, updatedAction)
         .then(response => {
-            if (response === 0) {
-                return errorHelper(404, 'No project by that ID.');
-            } else {
-                db.find(id).then(projects => {
-                    res.json(projects);
-                });
-            }
+            res.json(response);
         })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .catch(err =>
+            res.status(400).json({ error: 'Cannot update that item from DB.' })
+        );
 });
 
 server.delete('/api/actions/:id', (req, res) => {
     const { id } = req.params;
     actions
         .remove(id)
-        .then(actionRemoved => {
-            if (actionRemoved === 0) {
-                return errorHelper(404, 'No project by that ID.');
-            } else {
-                res.json({ success: 'Action removed'});
+        .then(response => {
+            if (response == 0) {
+                res.status(404).json({ error: 'That ID does not live in our DB.' });
+                return;
             }
+            res.json({ success: 'Item removed from DB.' });
         })
-        .catch(err => {
-            return errorHelper(500, 'Internal server error', res);
-        });
+        .catch(err => 
+            res.status(400).json({ error: 'Cannot remove that item from DB.' })
+        );
 });
 
 server.listen(port, () => console.log(`Server listening at port ${port}`));
