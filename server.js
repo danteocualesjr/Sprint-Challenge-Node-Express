@@ -12,7 +12,7 @@ const errorHelper = (status, message, res) => {
     res.status(status).json({ error: message });
 };
 
-// ===== CUSTOM MIDDLEWARE ===
+// =============== CUSTOM MIDDLEWARE ===============
 
 const nameCheckMiddleware = (req, res, next) => {
     const { name } = req.body;
